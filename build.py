@@ -3,6 +3,11 @@ import subprocess
 import sys
 import os
 
+# Ensure stdout uses UTF-8 so emoji/Vietnamese characters don't raise
+# UnicodeEncodeError on Windows terminals with cp1252 (or similar) encoding.
+if hasattr(sys.stdout, "reconfigure"):
+    sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+
 def build():
 
     cmd = [
