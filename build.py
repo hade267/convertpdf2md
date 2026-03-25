@@ -1,17 +1,9 @@
-"""
-Build script - Đóng gói PDF to Markdown Converter thành file .exe
-Sử dụng PyInstaller để tạo standalone executable.
-
-Cách dùng:
-    python build.py
-"""
 
 import subprocess
 import sys
 import os
 
 def build():
-    """Chạy PyInstaller để đóng gói ứng dụng."""
 
     cmd = [
         sys.executable, "-m", "PyInstaller",
@@ -21,13 +13,13 @@ def build():
         "--name", "PDF2MD",
         "--clean",
 
-        # Thu thập data
+                       
         "--collect-all", "pymupdf",
         "--collect-all", "pymupdf4llm",
         "--collect-all", "flet",
         "--collect-all", "litellm",
 
-        # Hidden imports
+                        
         "--hidden-import", "pymupdf",
         "--hidden-import", "pymupdf4llm",
         "--hidden-import", "fitz",
@@ -37,12 +29,12 @@ def build():
         "--hidden-import", "app",
         "--hidden-import", "ai_processor",
 
-        # Thêm source files
+                           
         "--add-data", f"converter.py{os.pathsep}.",
         "--add-data", f"app.py{os.pathsep}.",
         "--add-data", f"ai_processor.py{os.pathsep}.",
 
-        # Entry point
+                     
         "main.py",
     ]
 

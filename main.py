@@ -1,7 +1,3 @@
-"""
-PDF to Markdown Converter
-Entry point chạy ứng dụng.
-"""
 
 import flet as ft
 from app import main as flet_main

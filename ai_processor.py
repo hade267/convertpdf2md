@@ -23,7 +23,6 @@ class AIProcessor:
         self.task = task
         
     def _chunk_text(self, text: str, max_chars: int = 12000) -> list[str]:
-        """Chia văn bản thành các đoạn nhỏ dựa trên dấu ngắt đoạn, không vượt quá max_chars."""
         chunks = []
         paragraphs = text.split('\n\n')
         current_chunk = []
@@ -45,7 +44,6 @@ class AIProcessor:
         return chunks
 
     def process(self, text: str, log_callback=None) -> str:
-        """Xử lý văn bản đầu vào thông qua model AI đã chọn. Chứa cơ chế chia nhỏ (chunk) nếu quá dài."""
         if not text.strip():
             return text
             
@@ -60,13 +58,13 @@ class AIProcessor:
         model_name = model_info["name"]
         env_key = model_info["env"]
         
-        # Thiết lập biến môi trường tạm thời cho litellm
+                                                        
         os.environ[env_key] = self.api_key
         
-        # Lấy template prompt tương ứng với task
+                                                
         prompt_template = PROMPTS.get(self.task, PROMPTS["Tóm tắt"])
         
-        # Chia nhỏ text
+                       
         chunks = self._chunk_text(text, max_chars=15000)
         results = []
         

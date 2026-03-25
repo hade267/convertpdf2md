@@ -1,9 +1,3 @@
-"""
-PDF to Markdown Converter Engine
-Sử dụng pymupdf4llm để chuyển đổi PDF sang Markdown giữ nguyên cấu trúc.
-Hỗ trợ format DocMeta header, chunking phân cấp heading, table placeholder.
-Tích hợp TextCleaner để tăng độ chính xác trích xuất.
-"""
 
 import os
 import re
@@ -15,7 +9,6 @@ import pymupdf
 
 
 class DocMeta:
-    """Metadata của tài liệu."""
 
     def __init__(self):
         self.doc_id = ""
@@ -23,15 +16,13 @@ class DocMeta:
         self.date = ""
         self.signed_by = ""
         self.organization = ""
-        self.custom_fields = {}  # Trường metadata tùy chỉnh {key: value}
+        self.custom_fields = {}                                          
 
     def generate_id(self):
-        """Tạo doc_id tự động nếu chưa có."""
         if not self.doc_id:
             self.doc_id = str(uuid.uuid4())[:8].upper()
 
     def to_markdown(self) -> str:
-        """Xuất DocMeta block dạng Markdown."""
         self.generate_id()
         lines = [
             "# DocMeta",
@@ -41,7 +32,7 @@ class DocMeta:
             f"- **signed_by**: {self.signed_by}",
             f"- **organization**: {self.organization}",
         ]
-        # Thêm custom fields
+                            
         for key, value in self.custom_fields.items():
             if key.strip() and value.strip():
                 lines.append(f"- **{key.strip()}**: {value.strip()}")
@@ -50,7 +41,6 @@ class DocMeta:
 
     @staticmethod
     def extract_from_pdf(doc) -> "DocMeta":
-        """Trích xuất metadata từ PDF document."""
         meta = DocMeta()
         pdf_meta = doc.metadata or {}
 
@@ -59,7 +49,7 @@ class DocMeta:
         meta.signed_by = pdf_meta.get("author", "") or ""
         meta.organization = pdf_meta.get("producer", "") or ""
 
-        # Làm sạch date format PDF: D:20240101120000 → 2024-01-01
+                                                                 
         if meta.date.startswith("D:"):
             raw = meta.date[2:]
             if len(raw) >= 8:
@@ -70,41 +60,40 @@ class DocMeta:
 
 
 class ConversionOptions:
-    """Tùy chọn chuyển đổi PDF sang Markdown."""
 
     def __init__(self):
         self.write_images = True
         self.image_path = ""
-        self.table_strategy = "lines_strict"  # lines_strict, lines, text, explicit
-        self.pages = None  # None = tất cả trang
+        self.table_strategy = "lines_strict"                                       
+        self.pages = None                       
         self.ignore_graphics = False
         self.ignore_images = False
         self.force_text = False
-        self.header_detection = "auto"  # auto, toc, font, none
-        self.max_heading_level = 5  # Tối đa heading ##### (mức 5)
+        self.header_detection = "auto"                         
+        self.max_heading_level = 5                                
 
-        # DocMeta options
-        self.auto_extract_meta = True  # Tự động trích xuất metadata từ PDF
-        self.doc_meta = None  # DocMeta object (nếu user nhập thủ công)
+                         
+        self.auto_extract_meta = True                                      
+        self.doc_meta = None                                           
 
-        # ── Custom options ──
-        self.filename_prefix = ""      # Tiền tố tên file output
-        self.filename_suffix = ""      # Hậu tố tên file output
-        self.show_page_breaks = False   # Hiện dấu ngắt trang (<!-- PAGE_BREAK -->)
-        self.remove_page_numbers = True # Xóa số trang tự động (1, 2, 3... đầu/cuối trang)
-        self.bold_keywords = ""        # Từ khóa tự động in đậm, phân cách dấu phẩy
-        self.output_encoding = "utf-8"  # Encoding output file
+                              
+        self.filename_prefix = ""                               
+        self.filename_suffix = ""                              
+        self.show_page_breaks = False                                              
+        self.remove_page_numbers = True                                                   
+        self.bold_keywords = ""                                                    
+        self.output_encoding = "utf-8"                        
 
-        # ── Accuracy options ──
-        self.margins = 0                # Margin (points) bỏ qua header/footer: 0 hoặc (left, top, right, bottom)
-        self.dpi = 150                  # DPI cho trích xuất ảnh
-        self.fontsize_limit = 3         # Bỏ qua text nhỏ hơn N pt (watermark, footnote nhỏ)
-        self.dehyphenate = True         # Nối từ bị ngắt dòng (hy-\nphen → hyphen)
-        self.remove_headers_footers = True  # Tự động detect & xóa header/footer lặp lại
-        self.normalize_unicode = True   # Chuẩn hóa Unicode (ligature, dấu kết hợp)
-        self.fix_broken_paragraphs = True   # Nối câu bị ngắt dòng giữa chừng
+                                
+        self.margins = 0                                                                                         
+        self.dpi = 150                                          
+        self.fontsize_limit = 3                                                             
+        self.dehyphenate = True                                                   
+        self.remove_headers_footers = True                                              
+        self.normalize_unicode = True                                              
+        self.fix_broken_paragraphs = True                                    
         
-        # ── AI Integration ──
+                              
         self.enable_ai = False
         self.ai_provider = "ChatGPT"
         self.ai_api_key = ""
@@ -112,7 +101,6 @@ class ConversionOptions:
 
 
 class ConversionResult:
-    """Kết quả chuyển đổi một file PDF."""
 
     def __init__(self, pdf_path: str):
         self.pdf_path = pdf_path
@@ -126,23 +114,19 @@ class ConversionResult:
 
 
 class TextCleaner:
-    """
-    Làm sạch text sau khi trích xuất từ PDF.
-    Tăng độ chính xác bằng cách sửa các lỗi phổ biến.
-    """
 
-    # Bảng thay thế ligature phổ biến
+                                     
     LIGATURE_MAP = {
         'ﬁ': 'fi', 'ﬂ': 'fl', 'ﬀ': 'ff', 'ﬃ': 'ffi', 'ﬄ': 'ffl',
         'ﬅ': 'st', 'ﬆ': 'st', '\ufb01': 'fi', '\ufb02': 'fl',
-        '\u2018': "'", '\u2019': "'",  # Smart quotes
+        '\u2018': "'", '\u2019': "'",                
         '\u201c': '"', '\u201d': '"',
-        '\u2013': '-', '\u2014': '-',  # Em/en dash
-        '\u00a0': ' ',  # Non-breaking space
-        '\u200b': '',   # Zero-width space
-        '\u200c': '',   # Zero-width non-joiner
-        '\u200d': '',   # Zero-width joiner
-        '\ufeff': '',   # BOM
+        '\u2013': '-', '\u2014': '-',              
+        '\u00a0': ' ',                      
+        '\u200b': '',                     
+        '\u200c': '',                          
+        '\u200d': '',                      
+        '\ufeff': '',        
     }
 
     def __init__(self, dehyphenate: bool = True,
@@ -155,7 +139,6 @@ class TextCleaner:
         self.remove_headers_footers = remove_headers_footers
 
     def clean(self, text: str) -> str:
-        """Pipeline làm sạch toàn bộ text."""
         if self.normalize_unicode:
             text = self._normalize_unicode(text)
             text = self._fix_ligatures(text)
@@ -176,20 +159,17 @@ class TextCleaner:
         return text
 
     def _normalize_unicode(self, text: str) -> str:
-        """Chuẩn hóa Unicode (NFC) - gộp dấu kết hợp."""
         return unicodedata.normalize('NFC', text)
 
     def _fix_ligatures(self, text: str) -> str:
-        """Thay thế ligature bằng ký tự ASCII tương ứng."""
         for ligature, replacement in self.LIGATURE_MAP.items():
             text = text.replace(ligature, replacement)
         return text
 
     def _fix_special_chars(self, text: str) -> str:
-        """Sửa ký tự đặc biệt và encoding errors."""
-        # Xóa control characters (trừ \n, \t)
+                                             
         text = re.sub(r'[\x00-\x08\x0b-\x0c\x0e-\x1f\x7f]', '', text)
-        # Sửa bullet points phổ biến
+                                    
         text = text.replace('•', '- ')
         text = text.replace('●', '- ')
         text = text.replace('○', '  - ')
@@ -200,12 +180,7 @@ class TextCleaner:
         return text
 
     def _dehyphenate(self, text: str) -> str:
-        """
-        Nối từ bị ngắt dòng bởi dấu gạch ngang.
-        VD: 'quy-\nđịnh' → 'quyđịnh'
-            'regu-\nlation' → 'regulation'
-        """
-        # Nối từ bị ngắt: chữ-\n chữ (không phải heading/list)
+                                                              
         text = re.sub(
             r'(\w)-\s*\n\s*(\w)',
             r'\1\2',
@@ -214,11 +189,6 @@ class TextCleaner:
         return text
 
     def _fix_broken_paragraphs_fn(self, text: str) -> str:
-        """
-        Nối câu bị ngắt dòng giữa chừng (dòng kết thúc bằng chữ thường,
-        dòng sau bắt đầu bằng chữ thường → cùng đoạn văn).
-        Bỏ qua heading (#), list (- *), bảng (|), placeholder (<!--).
-        """
         lines = text.split('\n')
         result = []
         i = 0
@@ -226,23 +196,23 @@ class TextCleaner:
             line = lines[i]
             stripped = line.rstrip()
 
-            # Kiểm tra dòng tiếp theo
+                                     
             if (i + 1 < len(lines)
-                    and stripped  # dòng hiện tại không trống
-                    and not stripped.startswith('#')     # không phải heading
-                    and not stripped.startswith('- ')    # không phải list
-                    and not stripped.startswith('* ')    # không phải list
-                    and not stripped.startswith('|')     # không phải bảng
-                    and not stripped.startswith('<!-')   # không phải comment/placeholder
-                    and not stripped.startswith('>')     # không phải blockquote
-                    and not stripped.endswith(':')       # không phải label/title
-                    and not stripped.endswith('.')       # câu kết thúc bình thường
-                    and not stripped.endswith('!')       # câu kết thúc bình thường
-                    and not stripped.endswith('?')       # câu kết thúc bình thường
-                    and not stripped.endswith(';')       # câu kết thúc bình thường
+                    and stripped                             
+                    and not stripped.startswith('#')                         
+                    and not stripped.startswith('- ')                     
+                    and not stripped.startswith('* ')                     
+                    and not stripped.startswith('|')                      
+                    and not stripped.startswith('<!-')                                   
+                    and not stripped.startswith('>')                            
+                    and not stripped.endswith(':')                               
+                    and not stripped.endswith('.')                                 
+                    and not stripped.endswith('!')                                 
+                    and not stripped.endswith('?')                                 
+                    and not stripped.endswith(';')                                 
                     ):
                 next_line = lines[i + 1].strip()
-                # Dòng tiếp theo bắt đầu bằng chữ thường → nối
+                                                              
                 if (next_line
                         and next_line[0].islower()
                         and not next_line.startswith('#')
@@ -260,19 +230,15 @@ class TextCleaner:
         return '\n'.join(result)
 
     def _remove_repeated_headers_footers(self, text: str) -> str:
-        """
-        Detect và xóa header/footer lặp lại giữa các trang.
-        Tìm các dòng ngắn (<80 ký tự) xuất hiện >= 3 lần.
-        """
         lines = text.split('\n')
-        # Đếm tần suất mỗi dòng (sau khi strip)
+                                               
         line_counts = {}
         for line in lines:
             stripped = line.strip()
             if stripped and len(stripped) < 80 and not stripped.startswith('#'):
                 line_counts[stripped] = line_counts.get(stripped, 0) + 1
 
-        # Các dòng lặp >=3 lần → khả năng cao là header/footer
+                                                              
         repeated = {line for line, count in line_counts.items() if count >= 3}
 
         if repeated:
@@ -281,7 +247,6 @@ class TextCleaner:
         return '\n'.join(lines)
 
     def _remove_duplicate_lines(self, text: str) -> str:
-        """Xóa các dòng trùng lặp liên tiếp."""
         lines = text.split('\n')
         result = []
         prev = None
@@ -294,21 +259,14 @@ class TextCleaner:
 
 
 class MarkdownPostProcessor:
-    """
-    Post-processor cho Markdown output.
-    - Chuẩn hóa heading (tối đa N levels)
-    - Thay bảng bằng placeholder
-    - Thêm DocMeta header
-    - Text cleaning để tăng độ chính xác
-    """
 
-    # Pattern bắt bảng markdown (hàng bắt đầu bằng | và có ít nhất 2 cột)
+                                                                         
     TABLE_PATTERN = re.compile(
         r'((?:^\|.+\|[ \t]*\n)+)',
         re.MULTILINE
     )
 
-    # Pattern bắt heading
+                         
     HEADING_PATTERN = re.compile(r'^(#{1,6})\s+(.+)$', re.MULTILINE)
 
     def __init__(self, max_heading_level: int = 5,
@@ -323,47 +281,37 @@ class MarkdownPostProcessor:
         self.text_cleaner = text_cleaner
 
     def process(self, md_text: str, doc_meta: DocMeta = None) -> tuple:
-        """
-        Xử lý toàn bộ Markdown text.
-
-        Returns:
-            (processed_text, table_count)
-        """
-        # Bước 0: Text cleaning (tăng độ chính xác)
+                                                   
         if self.text_cleaner:
             md_text = self.text_cleaner.clean(md_text)
 
-        # Bước 1: Thay bảng bằng placeholder
+                                            
         md_text, table_count = self._replace_tables_with_placeholder(md_text)
 
-        # Bước 2: Chuẩn hóa heading levels (tối đa max_heading_level)
+                                                                     
         md_text = self._normalize_headings(md_text)
 
-        # Bước 3: Xử lý page breaks
+                                   
         md_text = self._handle_page_breaks(md_text)
 
-        # Bước 4: Loại bỏ số trang
+                                  
         if self.remove_page_numbers:
             md_text = self._remove_page_numbers(md_text)
 
-        # Bước 5: In đậm từ khóa
+                                
         if self.bold_keywords:
             md_text = self._apply_bold_keywords(md_text)
 
-        # Bước 6: Dọn dẹp khoảng trắng thừa
+                                           
         md_text = self._clean_whitespace(md_text)
 
-        # Bước 7: Thêm DocMeta header
+                                     
         if doc_meta:
             md_text = doc_meta.to_markdown() + md_text
 
         return md_text, table_count
 
     def _replace_tables_with_placeholder(self, md_text: str) -> tuple:
-        """
-        Thay thế bảng Markdown bằng placeholder.
-        Giữ nguyên vị trí để xử lý sau.
-        """
         table_count = 0
 
         def replace_table(match):
@@ -371,7 +319,7 @@ class MarkdownPostProcessor:
             table_count += 1
             table_content = match.group(1)
 
-            # Đếm số hàng và cột
+                                
             rows = [r for r in table_content.strip().split('\n') if r.strip()]
             num_rows = len(rows)
             num_cols = 0
@@ -380,7 +328,7 @@ class MarkdownPostProcessor:
                 if num_cols < 0:
                     num_cols = 0
 
-            # Xác định có phải separator row không (bỏ qua khi đếm data rows)
+                                                                             
             data_rows = num_rows
             for row in rows:
                 stripped = row.strip().strip('|').strip()
@@ -398,11 +346,6 @@ class MarkdownPostProcessor:
         return md_text, table_count
 
     def _normalize_headings(self, md_text: str) -> str:
-        """
-        Chuẩn hóa heading levels:
-        - Giới hạn tối đa max_heading_level
-        - Giữ nguyên cấu trúc phân cấp
-        """
         max_level = self.max_heading_level
 
         def replace_heading(match):
@@ -410,7 +353,7 @@ class MarkdownPostProcessor:
             title = match.group(2)
             level = len(hashes)
 
-            # Giới hạn level tối đa
+                                   
             if level > max_level:
                 level = max_level
 
@@ -419,12 +362,11 @@ class MarkdownPostProcessor:
         return self.HEADING_PATTERN.sub(replace_heading, md_text)
 
     def _handle_page_breaks(self, md_text: str) -> str:
-        """Xử lý dấu ngắt trang."""
-        # pymupdf4llm thường dùng -----  hoặc form-feed
+                                                       
         page_break_patterns = [
-            r'\n-{5,}\n',          # ----- separator
-            r'\x0c',               # form-feed character
-            r'\n\*{5,}\n',        # ***** separator  
+            r'\n-{5,}\n',                           
+            r'\x0c',                                    
+            r'\n\*{5,}\n',                           
         ]
         for pattern in page_break_patterns:
             if self.show_page_breaks:
@@ -434,17 +376,15 @@ class MarkdownPostProcessor:
         return md_text
 
     def _remove_page_numbers(self, md_text: str) -> str:
-        """Loại bỏ số trang đứng một mình trên một dòng."""
-        # Xóa dòng chỉ chứa số (1-4 chữ số), thường là page number
+                                                                  
         md_text = re.sub(r'^\s*\d{1,4}\s*$', '', md_text, flags=re.MULTILINE)
         return md_text
 
     def _apply_bold_keywords(self, md_text: str) -> str:
-        """In đậm các từ khóa chỉ định (bỏ qua heading và placeholder)."""
         for keyword in self.bold_keywords:
-            # Chỉ bold trong paragraph text, không bold trong heading hoặc comment
+                                                                                  
             escaped = re.escape(keyword)
-            # Không bold nếu đã nằm trong ** hoặc trong heading/comment
+                                                                       
             md_text = re.sub(
                 rf'(?<!\*\*)(?<!#\s)(?<!<!--\s)\b({escaped})\b(?!\*\*)',
                 rf'**\1**',
@@ -454,18 +394,16 @@ class MarkdownPostProcessor:
         return md_text
 
     def _clean_whitespace(self, md_text: str) -> str:
-        """Dọn dẹp khoảng trắng thừa nhưng giữ cấu trúc."""
-        # Loại bỏ quá 3 dòng trống liên tiếp
+                                            
         md_text = re.sub(r'\n{4,}', '\n\n\n', md_text)
 
-        # Đảm bảo có dòng trống trước heading
+                                             
         md_text = re.sub(r'([^\n])\n(#{1,5}\s)', r'\1\n\n\2', md_text)
 
         return md_text.strip() + "\n"
 
 
 class PDFConverter:
-    """Engine chuyển đổi PDF sang Markdown."""
 
     TABLE_STRATEGIES = ["lines_strict", "lines", "text", "explicit"]
     HEADER_MODES = ["auto", "toc", "font", "none"]
@@ -475,11 +413,9 @@ class PDFConverter:
         self._log_callback = None
 
     def set_progress_callback(self, callback):
-        """Đặt callback tiến trình: callback(current, total, message)"""
         self._progress_callback = callback
 
     def set_log_callback(self, callback):
-        """Đặt callback log: callback(message)"""
         self._log_callback = callback
 
     def _log(self, message: str):
@@ -491,17 +427,6 @@ class PDFConverter:
             self._progress_callback(current, total, message)
 
     def convert_file(self, pdf_path: str, output_dir: str, options: ConversionOptions = None) -> ConversionResult:
-        """
-        Chuyển đổi một file PDF sang Markdown.
-
-        Args:
-            pdf_path: Đường dẫn file PDF
-            output_dir: Thư mục lưu file MD output
-            options: Tùy chọn chuyển đổi
-
-        Returns:
-            ConversionResult với kết quả chuyển đổi
-        """
         if options is None:
             options = ConversionOptions()
 
@@ -511,18 +436,18 @@ class PDFConverter:
         try:
             self._log(f"📄 Đang mở: {os.path.basename(pdf_path)}")
 
-            # Mở PDF
+                    
             doc = pymupdf.open(pdf_path)
             result.page_count = len(doc)
             self._log(f"   Số trang: {result.page_count}")
 
-            # ── DocMeta ──
+                           
             if options.doc_meta:
                 doc_meta = options.doc_meta
                 self._log(f"   DocMeta: sử dụng metadata từ người dùng")
             elif options.auto_extract_meta:
                 doc_meta = DocMeta.extract_from_pdf(doc)
-                # Fallback title = filename nếu PDF không có title
+                                                                  
                 if not doc_meta.title:
                     doc_meta.title = filename
                 self._log(f"   DocMeta: trích xuất tự động (doc_id={doc_meta.doc_id})")
@@ -533,16 +458,16 @@ class PDFConverter:
 
             result.doc_meta = doc_meta
 
-            # Cấu hình header detection
+                                       
             hdr_info = self._get_header_info(doc, options)
 
-            # Cấu hình image path
+                                 
             image_path = options.image_path
             if not image_path and options.write_images:
                 image_path = os.path.join(output_dir, f"{filename}_images")
                 os.makedirs(image_path, exist_ok=True)
 
-            # Parse trang
+                         
             pages = None
             if options.pages:
                 pages = self._parse_pages(options.pages, result.page_count)
@@ -566,7 +491,7 @@ class PDFConverter:
             if options.remove_page_numbers:
                 self._log(f"   Xóa số trang: Có")
 
-            # Parse margins
+                           
             margins_val = options.margins
             if isinstance(margins_val, str) and margins_val.strip():
                 try:
@@ -582,10 +507,10 @@ class PDFConverter:
             elif isinstance(margins_val, str):
                 margins_val = 0
 
-            # Chuyển đổi raw markdown
+                                     
             self._log("   🔄 Đang chuyển đổi PDF → raw Markdown...")
 
-            # Cấu hình pymupdf4llm params nâng cao
+                                                  
             to_md_kwargs = dict(
                 pages=pages,
                 hdr_info=hdr_info,
@@ -598,17 +523,17 @@ class PDFConverter:
                 dpi=options.dpi,
             )
 
-            # Thêm margins nếu > 0
+                                  
             if margins_val:
                 to_md_kwargs['margins'] = margins_val
 
-            # Thêm fontsize_limit nếu > 0
+                                         
             if options.fontsize_limit > 0:
                 to_md_kwargs['fontsize_limit'] = options.fontsize_limit
 
             md_text = pymupdf4llm.to_markdown(doc, **to_md_kwargs)
 
-            # ── Text Cleaning (tăng độ chính xác) ──
+                                                     
             text_cleaner = TextCleaner(
                 dehyphenate=options.dehyphenate,
                 normalize_unicode=options.normalize_unicode,
@@ -617,7 +542,7 @@ class PDFConverter:
             )
             self._log("   🧹 Text cleaning: ligature, dehyphenate, unicode, paragraphs...")
 
-            # ── Post-processing ──
+                                   
             self._log("   🔧 Post-processing: DocMeta + heading + table placeholder...")
             processor = MarkdownPostProcessor(
                 max_heading_level=options.max_heading_level,
@@ -632,7 +557,7 @@ class PDFConverter:
             if table_count > 0:
                 self._log(f"   📊 Phát hiện {table_count} bảng → đã thay bằng placeholder")
 
-            # ── AI Post-processing ──
+                                      
             if getattr(options, "enable_ai", False) and getattr(options, "ai_api_key", "").strip():
                 self._log(f"   🤖 Đang chạy AI ({options.ai_provider} - {options.ai_task})...")
                 try:
@@ -648,7 +573,7 @@ class PDFConverter:
                     self._log(f"   ⚠️ Lỗi AI: {str(e)}")
                     md_text += f"\n\n> [!CAUTION]\n> **AI Processing Failed:** {str(e)}\n"
 
-            # Lưu file (with custom prefix/suffix)
+                                                  
             out_name = f"{options.filename_prefix}{filename}{options.filename_suffix}.md"
             md_path = os.path.join(output_dir, out_name)
             pathlib.Path(md_path).write_bytes(md_text.encode(options.output_encoding))
@@ -668,17 +593,6 @@ class PDFConverter:
         return result
 
     def convert_batch(self, pdf_paths: list, output_dir: str, options: ConversionOptions = None) -> list:
-        """
-        Chuyển đổi hàng loạt nhiều file PDF.
-
-        Args:
-            pdf_paths: Danh sách đường dẫn file PDF
-            output_dir: Thư mục lưu output
-            options: Tùy chọn chuyển đổi
-
-        Returns:
-            Danh sách ConversionResult
-        """
         os.makedirs(output_dir, exist_ok=True)
         results = []
         total = len(pdf_paths)
@@ -703,7 +617,6 @@ class PDFConverter:
         return results
 
     def _get_header_info(self, doc, options: ConversionOptions):
-        """Cấu hình phát hiện header."""
         mode = options.header_detection
 
         if mode == "none":
@@ -720,14 +633,10 @@ class PDFConverter:
             except Exception:
                 self._log("   ⚠ Font-based detection không khả dụng, dùng auto")
                 return None
-        else:  # auto
+        else:        
             return None
 
     def _parse_pages(self, pages_str: str, total_pages: int) -> list:
-        """
-        Parse chuỗi trang sang danh sách số trang.
-        Ví dụ: "1-3, 5, 7-9" => [0, 1, 2, 4, 6, 7, 8]
-        """
         pages = []
         try:
             for part in pages_str.split(","):

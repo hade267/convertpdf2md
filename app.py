@@ -25,7 +25,7 @@ class FletApp:
         self._build_ui()
 
     def _build_ui(self):
-        # ── Color Palette ──
+                             
         self.colors = {
             "accent": "#6C63FF",
             "bg_app": "#0F172A",
@@ -40,15 +40,15 @@ class FletApp:
         }
         self.page.bgcolor = self.colors["bg_app"]
 
-        # ── File Pickers (Note: FilePicker is now a Service in Flet 0.25+) ──
-        # ── Sidebar Components ──
-        # Tittle
+                                                                              
+                                  
+                
         title_card = self._build_card([
             ft.Text("📄 PDF → MD", size=22, weight=ft.FontWeight.BOLD, color=self.colors["accent"]),
             ft.Text("Chuyển đổi PDF sang Markdown", size=12, color=self.colors["text_secondary"])
         ])
 
-        # File Selection
+                        
         self.file_count_label = ft.Text("Chưa chọn file nào", size=12, color=self.colors["text_secondary"])
         self.file_listbox = ft.TextField(multiline=True, read_only=True, height=80, text_size=11,
                                          border_color=self.colors["border"], bgcolor=self.colors["bg_input"])
@@ -62,7 +62,7 @@ class FletApp:
             self.file_listbox
         ])
 
-        # Output Dir
+                    
         self.output_label = ft.Text("Mặc định: cùng thư mục PDF", size=11, color=self.colors["text_secondary"])
         outdir_card = self._build_card([
             self._section_label("THƯ MỤC OUTPUT"),
@@ -70,7 +70,7 @@ class FletApp:
             self.output_label
         ])
 
-        # DocMeta
+                 
         self.auto_meta_var = ft.Checkbox(label="Tự động trích xuất từ PDF", value=True, on_change=self._toggle_meta_fields)
         self.meta_doc_id = self._input("Doc ID (auto nếu trống)")
         self.meta_title = self._input("Tiêu đề tài liệu")
@@ -92,7 +92,7 @@ class FletApp:
             self.meta_custom
         ])
 
-        # Settings Convert
+                          
         self.table_strategy = self._dropdown("Phát hiện bảng:", PDFConverter.TABLE_STRATEGIES, "lines_strict")
         self.header_mode = self._dropdown("Phát hiện heading:", PDFConverter.HEADER_MODES, "auto")
         self.max_heading = self._dropdown("Max heading level:", ["3", "4", "5", "6"], "5")
@@ -107,7 +107,7 @@ class FletApp:
             self.extract_images, self.force_text
         ])
 
-        # Custom Options
+                        
         self.prefix_entry = self._input("Tiền tố filename")
         self.suffix_entry = self._input("Hậu tố filename")
         self.keywords_entry = self._input("Từ khóa in đậm (cách bằng dấu phẩy)")
@@ -124,7 +124,7 @@ class FletApp:
             self.output_encoding
         ])
 
-        # Accuracy
+                  
         self.margins_entry = self._input("Margins (pt)", hint="0 hoặc left,top,right,bottom")
         self.dpi_var = self._dropdown("DPI:", ["72", "96", "150", "200", "300"], "150")
         self.fontsize_limit = self._dropdown("Font min (pt):", ["0", "1", "2", "3", "4", "5"], "3")
@@ -140,7 +140,7 @@ class FletApp:
             self.dehyphenate, self.remove_hf, self.normalize_unicode, self.fix_paragraphs
         ])
 
-        # AI Integration
+                        
         self.enable_ai = ft.Switch(label="Bật xử lý AI (Tóm tắt, Dịch...)", value=False, on_change=self._toggle_ai_fields)
         self.ai_provider = self._dropdown("Nhà cung cấp AI:", ["ChatGPT (gpt-4o-mini) - Tối ưu nhất", "Gemini (1.5-flash) - Tốt cho file dài", "NVIDIA (Llama3-70b) - Tốc độ cao"], "ChatGPT (gpt-4o-mini) - Tối ưu nhất")
         self.ai_task = self._dropdown("Tác vụ:", ["Tóm tắt", "Dịch sang Tiếng Việt", "Sửa lỗi OCR (Proofread)", "Tối ưu hóa cho RAG (Làm sạch Markdown)"], "Tối ưu hóa cho RAG (Làm sạch Markdown)")
@@ -156,7 +156,7 @@ class FletApp:
             *self.ai_fields
         ])
 
-        # Actions
+                 
         self.convert_btn = ft.ElevatedButton(
             "CHUYỂN ĐỔI", 
             bgcolor=self.colors["success"], 
@@ -180,7 +180,7 @@ class FletApp:
             padding=10
         )
 
-        # ── Main Area Components ──
+                                    
         self.status_label = ft.Text("Sẵn sàng chuyển đổi", size=16, weight=ft.FontWeight.BOLD, color=self.colors["text_primary"])
         self.stats_label = ft.Text("", size=12, color=self.colors["text_secondary"])
         
@@ -191,7 +191,7 @@ class FletApp:
             border_radius=10
         )
 
-        # Tabs
+              
         self.preview_tb = ft.TextField(multiline=True, read_only=True, expand=True, text_size=13,
                                        border_color=self.colors["border"], bgcolor=self.colors["bg_input"],
                                        value="Chọn file PDF và nhấn 'Chuyển Đổi' để bắt đầu...")
@@ -236,7 +236,7 @@ class FletApp:
             padding=10
         )
 
-        # Progress
+                  
         self.progress_label = ft.Text("Chờ chuyển đổi...", size=12, color=self.colors["text_secondary"])
         self.progress_percent = ft.Text("0%", size=12, weight=ft.FontWeight.BOLD, color=self.colors["accent"])
         self.progressbar = ft.ProgressBar(value=0, color=self.colors["accent"], bgcolor=self.colors["bg_input"], height=8)
@@ -257,7 +257,7 @@ class FletApp:
             progress_frame
         ], expand=True, spacing=15)
 
-        # Main Layout
+                     
         self.page.add(
             ft.Row([
                 sidebar,
@@ -265,7 +265,7 @@ class FletApp:
             ], expand=True)
         )
 
-    # ── Helpers ──
+                   
 
     def _build_card(self, controls):
         return ft.Container(
@@ -287,7 +287,7 @@ class FletApp:
         return ft.Dropdown(label=label, options=opts, value=default, height=55, text_size=12,
                            border_color=self.colors["border"], bgcolor=self.colors["bg_input"])
 
-    # ── Actions ──
+                   
 
     def _toggle_meta_fields(self, e):
         disabled = self.auto_meta_var.value
